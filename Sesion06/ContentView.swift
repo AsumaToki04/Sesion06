@@ -39,8 +39,13 @@ struct ContentView: View {
             
             List {
                 ForEach(usuarios) { item in
-                    Text(item.nombre ?? "Sin nombre")
-                        .font(.headline)
+                    VStack(alignment: .leading) {
+                        Text(item.nombre ?? "Sin nombre")
+                            .font(.headline)
+                        Text(item.email ?? "Sin correo")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
                 }
             }
         }
@@ -60,6 +65,7 @@ struct ContentView: View {
                 let nuevoUsuario = Usuario(context: viewContext)
                 nuevoUsuario.id = UUID()
                 nuevoUsuario.nombre = "Usuario \(String(format: "%02d", contador))"
+                nuevoUsuario.email = "usuario\(String(format: "%02d", contador))@hotmail.com"
                 do {
                     try viewContext.save()
                     contador += 1
