@@ -10,79 +10,70 @@ import CoreData
 
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
-
     @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Item.timestamp, ascending: true)],
-        animation: .default)
-    private var items: FetchedResults<Item>
-
+        sortDescriptors: [NSSortDescriptor(keyPath: \Usuario.nombre, ascending: true)],
+        animation: .default
+    )
+    private var usuarios: FetchedResults<Usuario>
+    
+    @State private var contador = 1
+    @State private var isLoading: Bool = false
+    
     var body: some View {
-        NavigationView {
+        VStack {
+            Button(action: {
+                Task {
+                    await agregarUsuario()
+                }
+            }) {
+                if isLoading {
+                    ProgressView()
+                } else {
+                    Text("Agregar usuario")
+                        .padding()
+                        .background(.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                }
+            }
+            
             List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp!, formatter: itemFormatter)")
-                    } label: {
-                        Text(item.timestamp!, formatter: itemFormatter)
-                    }
-                }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+                ForEach(usuarios) { item in
+                    VStack(alignment: .leading) {
+                        Text(item.nombre ?? "Sin nombre")
+                            .font(.headline)
+                        Text(item.email ?? "Sin correo")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
                     }
                 }
             }
-            Text("Select an item")
         }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+        .onAppear {
+            if usuarios.count > 0 {
+                contador = usuarios.count
             }
         }
     }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            offsets.map { items[$0] }.forEach(viewContext.delete)
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+    
+    private func agregarUsuario() async { // no es asíncrono
+        isLoading = true
+        //Thread.sleep(forTimeInterval: 3) // pausa de 3 segundos
+        await Task.sleep(3_000_000_000)
+        await viewContext.perform {
+            withAnimation {
+                let nuevoUsuario = Usuario(context: viewContext)
+                nuevoUsuario.id = UUID()
+                nuevoUsuario.nombre = "Usuario \(String(format: "%02d", contador))"
+                nuevoUsuario.email = "usuario\(String(format: "%02d", contador))@hotmail.com"
+                do {
+                    try viewContext.save()
+                    contador += 1
+                } catch {
+                    print("Error al guardar: \(error)")
+                }
             }
+            isLoading = false
         }
-    }
-}
-
-private let itemFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .short
-    formatter.timeStyle = .medium
-    return formatter
-}()
-
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
     }
 }
